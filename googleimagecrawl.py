@@ -84,7 +84,10 @@ if __name__ == "__main__":
 
     # 이미지 다운로드
     for i in range(len(image_and_name_list)):
-        urllib.request.urlretrieve(image_and_name_list[i][0], image_and_name_list[i][1])
+        try:
+            urllib.request.urlretrieve(image_and_name_list[i][0], image_and_name_list[i][1])
+        except ValueError:
+            continue
 
     print('=== 이미지 수집 종료 ===')
     driver.close()  # 브라우저 닫기
