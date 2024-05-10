@@ -78,7 +78,7 @@ if __name__ == "__main__":
         if 'src' in image_info_list[i].attrs:
             save_image = image_info_list[i]['src']
 
-            image_path = os.path.join(name_query.replace(' ', '_') + '_' + str(downlaod_cnt) + '.jpg')
+            image_path = os.path.join(name_query.replace(' ', '_') + '__' + str(downlaod_cnt) + '.jpg')
             image_and_name_list.append((save_image, image_path))
             downlaod_cnt += 1
 
