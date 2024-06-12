@@ -13,7 +13,7 @@ from tqdm import tqdm
 # driver2.get(URL)
 # wait = WebDriverWait(driver2, 10)
 
-query_date = "20140613"
+query_date = "20110706"
 
 def remove_unicode_characters(text):
     return text.encode('cp949', 'ignore').decode('cp949')
@@ -36,12 +36,12 @@ while(True):
     options.add_argument('disable-gpu')
 
     driver1 = webdriver.Chrome(options=options)    # options=options
-    URL = "https://www.mk.co.kr/search?word=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90&dateType=direct&startDate=2014-06-12&endDate="+formatted_date
+    URL = "https://www.mk.co.kr/search?word=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90&dateType=direct&startDate=2004-06-12&endDate="+formatted_date
     driver1.get(URL)
     wait = WebDriverWait(driver1, 10)
     previous_height = driver1.execute_script("return document.body.scrollHeight")
 
-    for i in tqdm(range(0,1)):#315
+    for i in tqdm(range(0,1000)):#315
         wait = WebDriverWait(driver1, 10)
         driver1.execute_script("window.scrollTo(0, document.body.scrollHeight-100);")
         load_more_button = wait.until(EC.presence_of_element_located((By.ID, 'api_243')))
@@ -67,8 +67,8 @@ while(True):
     # news_titles = [element.get_text() for element in title_elements]
     # print(news_titles)
     # print(news_list)
-    # if(query_date==date):
-    #     break
+    if(query_date==date):
+        break
     query_date = date
     print(date)
     
@@ -80,4 +80,3 @@ while(True):
 
     print(f"CSV 파일 '{csv_filename}'이(가) 생성되었습니다.")
     driver1.quit()
-    break
