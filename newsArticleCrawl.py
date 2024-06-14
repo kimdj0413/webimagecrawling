@@ -13,7 +13,7 @@ from tqdm import tqdm
 # driver2.get(URL)
 # wait = WebDriverWait(driver2, 10)
 
-query_date = "20240612"
+query_date = "20200609"
 
 def remove_unicode_characters(text):
     return text.encode('cp949', 'ignore').decode('cp949')
@@ -36,7 +36,7 @@ while(True):
     options.add_argument('disable-gpu')
 
     driver1 = webdriver.Chrome(options=options)    # options=options
-    URL = "https://www.mk.co.kr/search?word=%EC%BD%94%EC%8A%A4%ED%94%BC&dateType=direct&startDate=2004-03-07&endDate="+formatted_date
+    URL = "https://www.mk.co.kr/search?word=%EC%82%BC%EC%84%B1&dateType=direct&startDate=2010-06-09&endDate="+formatted_date
     driver1.get(URL)
     wait = WebDriverWait(driver1, 10)
     previous_height = driver1.execute_script("return document.body.scrollHeight")

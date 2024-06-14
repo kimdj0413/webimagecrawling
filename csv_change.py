@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 data_dict = {}
 
-with open('data_2353_20240612.csv', mode='r', encoding='cp949') as file:
+with open('data_0702_20240614.csv', mode='r', encoding='cp949') as file:
     reader = csv.reader(file)
     next(reader)
     
