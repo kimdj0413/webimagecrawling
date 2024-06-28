@@ -13,7 +13,7 @@ import pandas as pd
 
 # nowDate = datetime.datetime.now()
 financialName = "삼성전자"
-startDate = "20240603"
+startDate = "20170321"
 startDate = datetime.datetime.strptime(startDate, "%Y%m%d")
 
 def scroll_down():

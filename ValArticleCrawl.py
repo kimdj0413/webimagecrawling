@@ -12,7 +12,7 @@ import re
 import pandas as pd
 
 financialName = "삼성전자"
-queryDate = ["20240626","20240627","20131021","20131022","20131023","20131024","20131025"]
+queryDate = ["20240628"]
 queryDate = [datetime.datetime.strptime(x, "%Y%m%d") for x in queryDate]
 # queryDate = datetime.datetime.strptime(queryDate, "%Y%m%d")
 
