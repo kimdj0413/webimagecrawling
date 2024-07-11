@@ -1,7 +1,15 @@
 import yfinance as yf
+import datetime
 
-financeName = '000660.KS'
-ticker = yf.Ticker(financeName)
-df = ticker.history(interval='5m', start='2023-07-02', end='2023-07-03', auto_adjust=False)
+# 삼성전자 티커
+ticker = '000660.KS'
 
-print(df)
+# 데이터 가져올 기간 설정 (예: 최근 7일)
+end_date = datetime.datetime.now()
+start_date = end_date - datetime.timedelta(days=7)
+
+# 삼성전자 분봉 데이터 다운로드
+data = yf.download(ticker, start=start_date, end=end_date, interval='1m')
+
+# 데이터 출력
+print(data)
