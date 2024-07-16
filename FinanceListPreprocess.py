@@ -3,6 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from tqdm import tqdm
+import seaborn as sns
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.decomposition import PCA
+from sklearn.manifold import MDS
 
 """
 print(df[:3])
@@ -144,28 +148,25 @@ for key in tqdm(uniqueElement):
 df = pd.DataFrame(data)
 df.to_csv('FinanceVector.csv', index=False)
 """
-
 ##    값이 모두 0.0인 행 삭제, 난수 행 삭제, 라벨 비율 맞추기
 df = pd.read_csv('FinanceVector.csv')
 df.columns = [f"Column{i+1}" for i in range(df.shape[1])]
 print(df[:3])
-input()
+
 mask = (df.iloc[:, :-1] == 0.0).all(axis=1)
 num_zero_rows = mask.sum()
 print(f"마지막 열의 값을 제외하고 다른 값들이 모두 0.0인 행의 갯수: {num_zero_rows}")
-print(len(df))
 df = df[~mask]
-print(len(df))
-input()
-print(len(df))
-print(df.isnull())
 df = df.dropna()
-print(len(df))
-input()
+# df = df.iloc[:,2:]
+df.to_csv('ready1.csv')
+
+##    라벨 비율
+df = pd.read_csv('ready1.csv')
 value_counts = df['Column49'].value_counts()
 print("각 값의 갯수:")
 print(value_counts)
-print(len(df))
+
 min_count = value_counts.min()
 balanced_df_list = []
 for value in value_counts.index:
@@ -173,4 +174,33 @@ for value in value_counts.index:
     balanced_df_list.append(subset)
 df = pd.concat(balanced_df_list).reset_index(drop=True)
 print(len(df))
-df.to_csv('ready.csv')
+df = df.iloc[:,1:]
+df.to_csv('ready1.csv')
+"""
+
+##    PCA 주성분 분석
+df = pd.read_csv('ready1.csv')
+# 마지막 열을 제외한 데이터프레임 생성
+df_except_last = df.iloc[:, :-1]
+print(df_except_last)
+
+# 푸리에 변환을 적용할 함수 정의
+def apply_fft(data):
+    return np.fft.fft(data).real  # 실수 부분만 반환
+
+# 12개의 열씩 묶어서 푸리에 변환 적용
+fft_columns = []
+for i in range(0, len(df_except_last.columns), 12):
+    subset = df_except_last.iloc[:, i:i+12]
+    # 각 열에 대해 푸리에 변환 적용
+    fft_result = subset.apply(apply_fft, axis=0)
+    fft_columns.append(fft_result)
+
+# 푸리에 변환 결과를 데이터프레임으로 결합
+fft_df = pd.concat(fft_columns, axis=1)
+fft_df.columns = [f'FFT_{i//12+1}_{j+1}' for i in range(0, len(df_except_last.columns), 12) for j in range(12)]
+
+# 마지막 열을 다시 추가
+fft_df['label'] = df.iloc[:, -1].values
+fft_df.to_csv('pca.csv')
+"""
