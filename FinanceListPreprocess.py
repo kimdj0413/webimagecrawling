@@ -8,13 +8,13 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import MDS
 
-"""
+
 print(df[:3])
 newDf = df[['종목코드','종목명','상장주식수']]
 print(newDf[:3])
 newDf.to_csv('FinanceListPreprocess.csv')
 print(len(newDf)-1)
-"""
+
 
 # df = df.iloc[1717:]
 # df.to_csv('minuteFinance.csv')
@@ -48,8 +48,8 @@ print(len(newDf)-1)
 # df = pd.read_csv('FinanceList.csv', encoding='cp949')
 # df.to_csv('FinanceList.csv', encoding='utf8')
 # print(df)
-"""
-##    빈 날짜 추가하기
+
+##    빈 시간 추가하기
 df = pd.read_csv('minuteFinance.csv')
 uniqueElement = df['Finance'].unique()
 counts = df['Finance'].value_counts()
@@ -72,7 +72,7 @@ for key in tqdm(uniqueElement):
         while(True):
           # print(f'[{nowFinance}]Wrong! predate : {preDate}, nowdate : {nowDate}')
           dateCut = preDate.strftime('%Y-%m-%d %H:%M')
-          newRow = {'Unnamed: 0':len(df),'Datetime':dateCut,'Day':df['Day'][i-1],'Finance':df['Finance'][i-1],'Open':df['Open'][i-1],'High':df['High'][i-1],'Low':df['Low'][i-1],'Close':df['Close'][i-1],'Adj Close':df['Adj Close'][i-1],'Volume':df['Volume'][i-1],'MA5':df['MA5'][i-1],'MA20':df['MA20'][i-1],'MA60':df['MA60'][i-1],'Rolling_Mean':df['Rolling_Mean'][i-1],'Upper_Band':df['Upper_Band'][i-1],'Lower_Band':df['Lower_Band'][i-1]}
+          newRow = {'Unnamed: 0':len(df),'Datetime':dateCut,'Day':df['Day'][i-1],'Finance':df['Finance'][i-1],'Open':df['Open'][i-1],'High':df['High'][i-1],'Low':df['Low'][i-1],'Close':df['Close'][i-1],'Adj Close':df['Adj Close'][i-1],'Volume':0,'MA5':df['MA5'][i-1],'MA20':df['MA20'][i-1],'MA60':df['MA60'][i-1],'Rolling_Mean':df['Rolling_Mean'][i-1],'Upper_Band':df['Upper_Band'][i-1],'Lower_Band':df['Lower_Band'][i-1]}
           df.loc[len(df)] = newRow
           preDate += timedelta(minutes=1)
           if(preDate == nowDate):
@@ -86,8 +86,8 @@ for key in tqdm(uniqueElement):
   startIndex += value
 
 df.to_csv('MinuteCandle.csv')
-"""
-"""
+
+
 df = pd.read_csv("MinuteCandle.csv")
 ##    정렬, 쓸데없는 열 제거, 요일을 숫자로
 df['Datetime'] = pd.to_datetime(df['Datetime'])
@@ -97,18 +97,18 @@ df = df.reset_index(drop=True)
 
 df.to_csv('readytovector.csv')
 
-day_to_number = {
-    'Mon': 1,
-    'Tue': 2,
-    'Wed': 3,
-    'Thu': 4,
-    'Fri': 5,
-    'Sat': 6,
-    'Sun': 7
-}
-df['Day'] = df['Day'].map(day_to_number)
-"""
-"""
+# day_to_number = {
+#     'Mon': 1,
+#     'Tue': 2,
+#     'Wed': 3,
+#     'Thu': 4,
+#     'Fri': 5,
+#     'Sat': 6,
+#     'Sun': 7
+# }
+# df['Day'] = df['Day'].map(day_to_number)
+
+
 ##    벡터 생성
 df = pd.read_csv('readytovector.csv')
 
@@ -121,9 +121,9 @@ data = []
 for key in tqdm(uniqueElement):
   value = counts_dict.get(key, 0)
   vectorList = []
-  for i in range(startIndex, startIndex+value-9):
+  for i in range(startIndex, startIndex+value-9):   # 예측 분 -1 ex) 10분 예측 startIndex+value-9
     vectorList = []
-    for j in range(i, i+4):
+    for j in range(i, i+4):   # 묶을 분 -1 ex) 5분 묶기 i+4
       vectorList.append(round(df['Open'][j]-df['Open'][j+1],2))
       vectorList.append(round(df['High'][j]-df['High'][j+1],2))
       vectorList.append(round(df['Low'][j]-df['Low'][j+1],2))
@@ -136,18 +136,26 @@ for key in tqdm(uniqueElement):
       vectorList.append(round(df['Rolling_Mean'][j]-df['Rolling_Mean'][j+1],2))
       vectorList.append(round(df['Upper_Band'][j]-df['Upper_Band'][j+1],2))
       vectorList.append(round(df['Lower_Band'][j]-df['Lower_Band'][j+1],2))
+    
+    # 다음 Open만 포함
+    # vectorList.append(round(df['Open'][i+4],2))
     openValue = df['Open'][i+9]-df['Open'][i]
-    if openValue > 0:
+    openValuePercent = openValue/df['Open'][i]*100
+    
+    if openValuePercent >= 1:
+      vectorList.append(3.0)
+    elif openValuePercent >= 0 and openValuePercent < 1:
       vectorList.append(2.0)
-    elif openValue == 0:
+    elif openValuePercent < 0 and openValuePercent > -1:
       vectorList.append(1.0)
     else:
       vectorList.append(0.0)
+    
     data.append(vectorList)
   startIndex += value
 df = pd.DataFrame(data)
 df.to_csv('FinanceVector.csv', index=False)
-"""
+
 ##    값이 모두 0.0인 행 삭제, 난수 행 삭제, 라벨 비율 맞추기
 df = pd.read_csv('FinanceVector.csv')
 df.columns = [f"Column{i+1}" for i in range(df.shape[1])]
@@ -159,10 +167,10 @@ print(f"마지막 열의 값을 제외하고 다른 값들이 모두 0.0인 행�
 df = df[~mask]
 df = df.dropna()
 # df = df.iloc[:,2:]
-df.to_csv('ready1.csv')
+df.to_csv('readytemp.csv')
 
 ##    라벨 비율
-df = pd.read_csv('ready1.csv')
+df = pd.read_csv('readytemp.csv')
 value_counts = df['Column49'].value_counts()
 print("각 값의 갯수:")
 print(value_counts)
@@ -174,33 +182,21 @@ for value in value_counts.index:
     balanced_df_list.append(subset)
 df = pd.concat(balanced_df_list).reset_index(drop=True)
 print(len(df))
+
 df = df.iloc[:,1:]
-df.to_csv('ready1.csv')
-"""
+df.to_csv('ready4.csv')
 
 ##    PCA 주성분 분석
-df = pd.read_csv('ready1.csv')
-# 마지막 열을 제외한 데이터프레임 생성
-df_except_last = df.iloc[:, :-1]
-print(df_except_last)
+df = pd.read_csv('ready.csv')
+df_except_last = df.iloc[:, 1:-1]
+pca = PCA(n_components=1)
 
-# 푸리에 변환을 적용할 함수 정의
-def apply_fft(data):
-    return np.fft.fft(data).real  # 실수 부분만 반환
-
-# 12개의 열씩 묶어서 푸리에 변환 적용
-fft_columns = []
+pca_columns = []
 for i in range(0, len(df_except_last.columns), 12):
     subset = df_except_last.iloc[:, i:i+12]
-    # 각 열에 대해 푸리에 변환 적용
-    fft_result = subset.apply(apply_fft, axis=0)
-    fft_columns.append(fft_result)
+    pca_result = pca.fit_transform(subset)
+    pca_columns.append(pca_result)
+pca_df = pd.DataFrame(np.hstack(pca_columns), columns=[f'PCA_{i//12+1}' for i in range(0, len(df_except_last.columns), 12)])
+pca_df['Column49'] = df.iloc[:, -1].values
 
-# 푸리에 변환 결과를 데이터프레임으로 결합
-fft_df = pd.concat(fft_columns, axis=1)
-fft_df.columns = [f'FFT_{i//12+1}_{j+1}' for i in range(0, len(df_except_last.columns), 12) for j in range(12)]
-
-# 마지막 열을 다시 추가
-fft_df['label'] = df.iloc[:, -1].values
-fft_df.to_csv('pca.csv')
-"""
+pca_df.to_csv('pca.csv',index=False)
