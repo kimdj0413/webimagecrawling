@@ -3,8 +3,9 @@ import numpy as np
 from tqdm import tqdm
 from datetime import datetime, timedelta
 
-df = pd.read_csv('all.csv')
 """
+df = pd.read_csv('all.csv')
+
 # ##    정렬
 # df['날짜'] = pd.to_datetime(df['날짜'], format='%Y%m%d')
 # df = df.sort_values(by=['code','날짜','시간'])
@@ -17,8 +18,8 @@ df = pd.read_csv('all.csv')
 # df.to_csv('all.csv')
 
 print(df.head())
-"""
-# 데이터 로드
+
+##      거래량 스케일링
 financeList = pd.read_csv('FinanceListPreprocess.csv')
 name = financeList['종목코드'].tolist()
 volSum = financeList['상장주식수'].tolist()
@@ -38,11 +39,10 @@ def divide_volumes(row):
         input()
     return row
 
-# 새로운 CSV 파일에 첫 번째 줄을 헤더와 함께 저장
 output_file = 'allTemp.csv'
 df.head(0).to_csv(output_file, index=False)
 cnt = 0
-# 한 줄씩 처리하여 저장
+
 for idx, row in df.iterrows():
     processed_row = divide_volumes(row)
     processed_row.to_frame().T.to_csv(output_file, index=False, mode='a', header=False)
@@ -50,55 +50,46 @@ for idx, row in df.iterrows():
         print(f'{cnt}개 처리 완료')
     cnt += 1
 
-print("데이터 처리가 완료되었습니다.")
+print("데이터 처리 완료")
 """
-uniqueElement = df['code'].unique()
+# 데이터 로드
+df = pd.read_csv('allTemp.csv')
+
+# Unique 코드 및 카운트 계산
 counts = df['code'].value_counts()
 counts_dict = counts.to_dict()
 
-startIndex = 0
-first_write = True
+# 결과를 저장할 리스트
+results = []
 
-for key in tqdm(uniqueElement):
-    value = counts_dict.get(key, 0)
-    for i in range(startIndex, startIndex+value-9):   # 예측 분 -1 ex) 10분 예측 startIndex+value-9
+for key in tqdm(counts_dict.keys()):
+    value = counts_dict[key]
+    for i in range(value - 9):   # 예측 분 -1
+        start_idx = counts_dict[key] - value + i
+        end_idx = start_idx + 4  # 묶을 분 -1
+
+        # 벡터화하여 연산
         vectorList = []
-        for j in range(i, i+4):   # 묶을 분 -1 ex) 5분 묶기 i+4
-            vectorList.append(round(df['시가'][j]-df['시가'][j+1],2))
-            vectorList.append(round(df['고가'][j]-df['고가'][j+1],2))
-            vectorList.append(round(df['저가'][j]-df['저가'][j+1],2))
-            vectorList.append(round(df['종가'][j]-df['종가'][j+1],2))
-            vectorList.append(round(df['거래량'][j]-df['거래량'][j+1],2))
-            vectorList.append(round(df['매도량'][j]-df['매도량'][j+1],2))
-            vectorList.append(round(df['매수량'][j]-df['매수량'][j+1],2))
-            vectorList.append(round(df['MA5'][j]-df['MA5'][j+1],2))
-            vectorList.append(round(df['MA20'][j]-df['MA20'][j+1],2))
-            vectorList.append(round(df['MA60'][j]-df['MA60'][j+1],2))
-            vectorList.append(round(df['MA120'][j]-df['MA120'][j+1],2))
-            vectorList.append(round(df['Upper_Band'][j]-df['Upper_Band'][j+1],2))
-            vectorList.append(round(df['Lower_Band'][j]-df['Lower_Band'][j+1],2))
+        for col in ['시가', '고가', '저가', '종가', '거래량', '매도량', '매수량', 'MA5', 'MA20', 'MA60', 'MA120', 'Upper_Band', 'Lower_Band']:
+            diff = df[col].values[start_idx:end_idx] - df[col].values[start_idx + 1:end_idx + 1]
+            vectorList.extend(round(d, 2) for d in diff)
 
-        openValue = df['시가'][i+9]-df['시가'][i]
-        openValuePercent = openValue/df['시가'][i]*100
-
-        if openValuePercent >= 1:
-            vectorList.append(3.0)
-        elif openValuePercent >= 0 and openValuePercent < 1:
+        openValue = df['시가'][start_idx + 9] - df['시가'][start_idx]
+        if openValue > 0:
             vectorList.append(2.0)
-        elif openValuePercent < 0 and openValuePercent > -1:
+        elif openValue == 0:
             vectorList.append(1.0)
         else:
             vectorList.append(0.0)
 
-        # 데이터프레임으로 변환
-        temp_df = pd.DataFrame([vectorList])
+        results.append(vectorList)
 
-        # CSV 파일에 추가
-        temp_df.to_csv('allVector.csv', mode='a', header=first_write, index=False)
-        first_write = False
+# 결과를 DataFrame으로 변환
+results_df = pd.DataFrame(results)
 
-    startIndex += value
-
+# CSV 파일에 저장
+results_df.to_csv('allVector.csv', index=False)
+'''
 ##      난수 및 의미 없는 데이터 삭제
 df = pd.read_csv('allVector.csv')
 df.columns = [f"Column{i+1}" for i in range(df.shape[1])]
@@ -109,18 +100,16 @@ df = df[~mask]
 df = df.dropna()
 
 ##    라벨 비율 맞추기
-value_counts = df['Column49'].value_counts()
+value_counts = df['Column53'].value_counts()
 print("각 값의 갯수:")
 print(value_counts)
 
 min_count = value_counts.min()
 balanced_df_list = []
 for value in value_counts.index:
-    subset = df[df['Column49'] == value].sample(n=min_count, random_state=42)
+    subset = df[df['Column53'] == value].sample(n=min_count, random_state=42)
     balanced_df_list.append(subset)
 df = pd.concat(balanced_df_list).reset_index(drop=True)
 print(len(df))
-
-df = df.iloc[:,1:]
-df.to_csv('ready4.csv')
-"""
+df.to_csv('readyAll1.csv')
+'''
