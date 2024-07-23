@@ -3,10 +3,8 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
-"""
 ##    700000 줄로 자르기, 쓸데없는 열 지우기
 df = pd.read_csv('all.csv',encoding='cp949')
-df = df.iloc[:700000]
 df = df.drop(columns=['day_name','매도량','매수량'])
 df['거래평균'] = round(df['거래량'].rolling(window=14).mean(),2)
 df = df.iloc[:,1:]
@@ -20,10 +18,10 @@ df.to_csv('allMillion.csv')
 
 ##    각각 주식마다 갖고있는 열 개수 딕셔너리 만들기
 df = pd.read_csv('allMillion.csv')
-df = df.iloc[:,1:]
-df = df[df['날짜'].astype(str).str.contains('2022')].reset_index(drop=True)
+df = df.iloc[:,3:]
+df = df.astype('float32')
 print(df)
-print(len(df))
+print(df.info())
 
 uniqueCnt = df['code'].value_counts()
 uniqueDict = uniqueCnt.to_dict()
@@ -41,29 +39,37 @@ def append_to_csv(data):
 
 index = 0
 columns = ['시가', '고가', '저가', '종가', 'MA5', 'MA20', 'MA60', 'MA120', 'Upper_Band', 'Lower_Band']
-for key in uniqueDict:
+for key in tqdm(uniqueDict):
   #   8분 예측
   for i in tqdm(range(index, index+uniqueDict[key]-7)):
     vectorList = []
     #   5분 묶기
     for j in range(0,4):
-      for column in columns:
-        change_rate = (df.iloc[i + j + 1][column] - df.iloc[i + j][column]) / df.iloc[i + j][column]*100
-        vectorList.append(change_rate)
-      vectorList.append((df.iloc[i + j + 1]['거래량']-df.iloc[i + j]['거래량']) / df.iloc[i + j]['거래평균']*100)
-    resultValue = (df.iloc[i+7]['시가']-df.iloc[i+4]['종가']) / df.iloc[i+4]['종가'] * 100
-    if resultValue >= 0.5:
-      vectorList.append(3)
-    elif resultValue >= 0 and resultValue < 0.5:
-      vectorList.append(2)
-    elif resultValue <= 0 and resultValue > -0.5:
-      vectorList.append(1)
+        for column in columns:
+            if(df.iloc[i + j][column] != 0):
+                vectorList.append((df.iloc[i + j + 1][column] - df.iloc[i + j][column]) / df.iloc[i + j][column]*100)
+            else:
+               vectorList.append(999999)
+        if(df.iloc[i + j]['거래평균'] != 0):
+            vectorList.append((df.iloc[i + j + 1]['거래량']-df.iloc[i + j]['거래량']) / df.iloc[i + j]['거래평균']*100)
+        else:
+           vectorList.append(999999)
+    if(df.iloc[i+4]['종가'] != 0):
+        resultValue = (df.iloc[i+7]['시가']-df.iloc[i+4]['종가']) / df.iloc[i+4]['종가'] * 100
+        if resultValue >= 0.5:
+            vectorList.append(3)
+        elif resultValue >= 0 and resultValue < 0.5:
+            vectorList.append(2)
+        elif resultValue <= 0 and resultValue > -0.5:
+            vectorList.append(1)
+        else:
+            vectorList.append(0)
     else:
-      vectorList.append(0)
+       vectorList.append(99)
     append_to_csv(vectorList)
   index += uniqueDict[key]
+##      999999가 포함된 열 지우기 & 라벨이 99인거 지우기
 """
-
 ##    데이터 타입 바꾸기(float16)
 df = pd.read_csv('allMillionVector.csv')
 df = df.astype('float16')
@@ -74,3 +80,4 @@ print(df.info())
 # df = pd.read_csv('allMillion.csv')
 # df.to_csv('allMillion.csv',index=True)
 # print(df)
+"""
